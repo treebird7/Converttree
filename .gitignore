@@ -1,0 +1,88 @@
+# Learn more https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files
+
+# dependencies
+node_modules/
+
+# Expo
+.expo/
+dist/
+web-build/
+expo-env.d.ts
+
+# Native
+.kotlin/
+*.orig.*
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+
+# Metro
+.metro-health-check*
+
+# debug
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+
+# macOS
+.DS_Store
+*.pem
+
+# local env files
+.env
+.env.*
+.env*.local
+
+# typescript
+*.tsbuildinfo
+
+app-example
+
+# generated native folders
+/ios
+/android
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Logs
+logs
+*.log
+
+# OS
+Thumbs.db
+
+# Build files
+*.tgz
+*.tar.gz
+.cache/
+
+# Webdev artifacts (checkpoint zips, migrations, etc.)
+.webdev/
+
+# Manus platform scaffolding (runtime, SDK, oauth internals)
+lib/_core/
+server/_core/
+shared/_core/
+
+# Expo device list (personal machine info)
+.expo/devices.json
+
+# AI agent context (not for public repo)
+CLAUDE.md
+
+# Internal planning docs (marketing strategy, roadmap, todos)
+todo.md
+design.md
+docs/LANDING_PAGE.md
+docs/internal/
+*.internal.md
+
+# QR code generator (dev tooling)
+scripts/generate_qr.mjs
