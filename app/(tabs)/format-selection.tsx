@@ -5,6 +5,7 @@ import { useConversion } from "@/lib/conversion-context";
 import { useColors } from "@/hooks/use-colors";
 import * as Haptics from "expo-haptics";
 import { trpc } from "@/lib/trpc";
+import { FilePreviewThumbnail } from "@/components/file-preview-thumbnail";
 
 const CONVERSION_MAP: Record<string, string[]> = {
   txt: ["md", "docx", "pdf"],
@@ -66,15 +67,20 @@ export default function FormatSelectionScreen() {
             style={{ borderColor: colors.border, backgroundColor: colors.surface }}
           >
             <Text className="text-xs text-muted uppercase tracking-wider font-bold">Your File</Text>
-            <Text className="text-lg font-bold text-foreground mt-2">{inputFile.name}</Text>
-            <View className="flex-row mt-3 gap-6">
-              <View>
-                <Text className="text-xs text-muted">Format</Text>
-                <Text className="font-bold text-foreground mt-1">.{inputFile.format.toUpperCase()}</Text>
-              </View>
-              <View>
-                <Text className="text-xs text-muted">Size</Text>
-                <Text className="font-bold text-foreground mt-1">{(inputFile.size / 1024).toFixed(1)} KB</Text>
+            <View className="flex-row items-center gap-4 mt-3">
+              <FilePreviewThumbnail file={inputFile} size={72} />
+              <View className="flex-1">
+                <Text className="text-base font-bold text-foreground" numberOfLines={2}>{inputFile.name}</Text>
+                <View className="flex-row mt-2 gap-6">
+                  <View>
+                    <Text className="text-xs text-muted">Format</Text>
+                    <Text className="font-bold text-foreground mt-0.5">.{inputFile.format.toUpperCase()}</Text>
+                  </View>
+                  <View>
+                    <Text className="text-xs text-muted">Size</Text>
+                    <Text className="font-bold text-foreground mt-0.5">{(inputFile.size / 1024).toFixed(1)} KB</Text>
+                  </View>
+                </View>
               </View>
             </View>
           </View>

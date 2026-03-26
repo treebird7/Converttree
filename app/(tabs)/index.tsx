@@ -130,7 +130,7 @@ export default function HomeScreen() {
               }}
             >
               <Image
-                source={require("@/assets/images/icon.png")}
+                source={require("@/assets/images/glyph_converttree.png")}
                 style={{ width: 208, height: 208, borderRadius: 40 }}
                 resizeMode="cover"
               />
