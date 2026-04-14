@@ -1,0 +1,5 @@
+pymupdf
+python-docx
+Pillow
+reportlab
+weasyprint

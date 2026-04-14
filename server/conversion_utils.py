@@ -1,4 +1,4 @@
-#!/usr/bin/python3.11
+#!/usr/bin/env python3
 """
 File conversion utilities using Pandoc, PyMuPDF, and Pillow.
 Supports conversions between: txt, md, docx, pdf, and images (png, jpg).

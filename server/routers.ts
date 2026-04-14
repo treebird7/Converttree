@@ -64,7 +64,7 @@ const MAX_FILE_BYTES = 50 * 1024 * 1024; // 50 MB
           delete cleanEnv.PYTHONPATH;
           delete cleanEnv.NUITKA_PYTHONPATH;
           await new Promise<void>((resolve, reject) => {
-            const python = spawn("/usr/bin/python3.11", [
+            const python = spawn("python3", [
               path.join(__dirname, "conversion_utils.py"),
               inputPath,
               outputPath,
