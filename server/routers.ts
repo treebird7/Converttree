@@ -1,13 +1,15 @@
 import { z } from "zod";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
-import { publicProcedure, router } from "./_core/trpc";
+import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
+import { COOKIE_NAME } from "../shared/const.js";
 import { spawn } from "child_process";
 import * as fs from "fs";
 import * as path from "path";
 import * as os from "os";
 
-const COOKIE_NAME = "session";
+const VALID_FORMATS = new Set(["txt", "md", "docx", "pdf", "png", "jpg", "jpeg"]);
+const MAX_FILE_BYTES = 50 * 1024 * 1024; // 50 MB
 
 export const appRouter = router({
   // if you need to use socket.io, read and register route in server/_core/index.ts, all api should start with '/api/' so that the gateway can route correctly
@@ -23,11 +25,8 @@ export const appRouter = router({
     }),
   }),
 
-const VALID_FORMATS = new Set(["txt", "md", "docx", "pdf", "png", "jpg", "jpeg"]);
-const MAX_FILE_BYTES = 50 * 1024 * 1024; // 50 MB
-
   conversion: router({
-    convert: publicProcedure
+    convert: protectedProcedure
       .input(
         z.object({
           inputFormat: z.string().refine((f) => VALID_FORMATS.has(f), { message: "Invalid input format" }),
@@ -57,12 +56,15 @@ const MAX_FILE_BYTES = 50 * 1024 * 1024; // 50 MB
           console.log(`[Conversion] Input path: ${inputPath}`);
           console.log(`[Conversion] Output path: ${outputPath}`);
 
-          // Run Python conversion script with improved error handling
-          // Must use absolute path and clear PYTHONHOME/PYTHONPATH to avoid Python 3.13 override
-          const cleanEnv = { ...process.env };
-          delete cleanEnv.PYTHONHOME;
-          delete cleanEnv.PYTHONPATH;
-          delete cleanEnv.NUITKA_PYTHONPATH;
+          // Allowlist only what python3 needs — never pass server secrets to subprocess
+          const cleanEnv = {
+            PATH: process.env.PATH,
+            HOME: process.env.HOME,
+            TMPDIR: process.env.TMPDIR,
+            TMP: process.env.TMP,
+            TEMP: process.env.TEMP,
+            LANG: process.env.LANG,
+          } as unknown as NodeJS.ProcessEnv;
           await new Promise<void>((resolve, reject) => {
             const python = spawn("python3", [
               path.join(__dirname, "conversion_utils.py"),
