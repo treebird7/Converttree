@@ -50,7 +50,7 @@ export const appRouter = router({
 
         try {
           // Write pre-decoded buffer to input file
-          fs.writeFileSync(inputPath, buffer);
+          fs.writeFileSync(inputPath, buffer, { mode: 0o600 });
 
           console.log(`[Conversion] Starting: ${input.inputFormat} -> ${input.outputFormat}`);
           console.log(`[Conversion] Input path: ${inputPath}`);
@@ -113,7 +113,8 @@ export const appRouter = router({
 
             python.on("error", (err) => {
               clearTimeout(timeout);
-              reject(new Error(`Failed to spawn Python process: ${err.message}`));
+              console.error("[Conversion] spawn error:", err);
+              reject(new Error("Conversion unavailable — system configuration error"));
             });
           });
 
