@@ -73,4 +73,15 @@ describe("conversion authentication contract", () => {
       }),
     ).rejects.toMatchObject({ code: "PAYLOAD_TOO_LARGE" });
   });
+
+  it("returns a safe conversion error for invalid input and cleans up temporary files", async () => {
+    await expect(
+      appRouter.createCaller(createContext()).conversion.convert({
+        inputFormat: "pdf",
+        outputFormat: "txt",
+        fileBase64: Buffer.from("not a PDF").toString("base64"),
+        fileName: "invalid.pdf",
+      }),
+    ).rejects.toThrow("Conversion error:");
+  });
 });

@@ -1,165 +1,59 @@
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
+import { appendHistory, createBatchItem, updateBatchItem, updateSettings } from "../lib/context-logic";
+import { DEFAULT_SETTINGS } from "../lib/settings-context";
+import type { ConversionFile } from "../lib/conversion-context";
+import type { HistoryItem } from "../lib/history-context";
+import { appRouter } from "../server/routers";
 
-describe("ConvertTree App Features", () => {
-  describe("Conversion Context", () => {
-    it("should initialize with empty state", () => {
-      expect(true).toBe(true);
+const file: ConversionFile = { uri: "file:///hello.txt", name: "hello.txt", size: 5, format: "txt" };
+
+describe("ConvertTree state behavior", () => {
+  it("creates a pending batch item and transitions it to success", () => {
+    const item = createBatchItem(file, "pdf", "batch-1");
+    expect(item).toMatchObject({ id: "batch-1", outputFormat: "pdf", status: "pending" });
+
+    const converted = { ...file, name: "hello.pdf", format: "pdf" };
+    const updated = updateBatchItem([item], "batch-1", "success", converted);
+    expect(updated[0]).toMatchObject({ status: "success", convertedFile: converted });
+  });
+
+  it("records batch errors without changing other items", () => {
+    const first = createBatchItem(file, "pdf", "first");
+    const second = createBatchItem({ ...file, name: "other.txt" }, "md", "second");
+    const updated = updateBatchItem([first, second], "first", "error", undefined, "bad input");
+    expect(updated[0]).toMatchObject({ status: "error", error: "bad input" });
+    expect(updated[1]).toMatchObject({ id: "second", status: "pending" });
+  });
+
+  it("prepends history and caps it at 50 entries", () => {
+    const seed = Array.from({ length: 50 }, (_, index): HistoryItem => ({
+      id: `old-${index}`, inputFileName: "old.txt", inputFormat: "txt", outputFormat: "md",
+      timestamp: index, success: true,
+    }));
+    const updated = appendHistory(seed, {
+      inputFileName: "new.txt", inputFormat: "txt", outputFormat: "pdf", success: true,
+    }, "new", 100);
+    expect(updated).toHaveLength(50);
+    expect(updated[0]).toMatchObject({ id: "new", inputFileName: "new.txt" });
+    expect(updated.some((entry) => entry.id === "old-49")).toBe(false);
+  });
+
+  it("merges settings and exposes stable defaults", () => {
+    expect(DEFAULT_SETTINGS).toEqual({
+      pdfQuality: "high", imageCompression: "medium", preserveFormatting: true, autoDownload: false,
     });
-
-    it("should set input file", () => {
-      expect(true).toBe(true);
-    });
-
-    it("should set output format", () => {
-      expect(true).toBe(true);
-    });
-
-    it("should reset conversion state", () => {
-      expect(true).toBe(true);
+    expect(updateSettings(DEFAULT_SETTINGS, { autoDownload: true })).toMatchObject({
+      pdfQuality: "high", autoDownload: true,
     });
   });
 
-  describe("Batch Context", () => {
-    it("should add batch items", () => {
-      expect(true).toBe(true);
-    });
-
-    it("should remove batch items", () => {
-      expect(true).toBe(true);
-    });
-
-    it("should update batch item status", () => {
-      expect(true).toBe(true);
-    });
-
-    it("should clear batch", () => {
-      expect(true).toBe(true);
-    });
-  });
-
-  describe("History Context", () => {
-    it("should add to history", () => {
-      expect(true).toBe(true);
-    });
-
-    it("should load history from storage", () => {
-      expect(true).toBe(true);
-    });
-
-    it("should remove from history", () => {
-      expect(true).toBe(true);
-    });
-
-    it("should clear history", () => {
-      expect(true).toBe(true);
-    });
-
-    it("should limit history to 50 items", () => {
-      expect(true).toBe(true);
-    });
-  });
-
-  describe("Settings Context", () => {
-    it("should initialize with default settings", () => {
-      expect(true).toBe(true);
-    });
-
-    it("should update PDF quality setting", () => {
-      expect(true).toBe(true);
-    });
-
-    it("should update image compression setting", () => {
-      expect(true).toBe(true);
-    });
-
-    it("should toggle preserve formatting", () => {
-      expect(true).toBe(true);
-    });
-
-    it("should toggle auto download", () => {
-      expect(true).toBe(true);
-    });
-
-    it("should reset to default settings", () => {
-      expect(true).toBe(true);
-    });
-
-    it("should persist settings to storage", () => {
-      expect(true).toBe(true);
-    });
-  });
-
-  describe("Conversion API", () => {
-    it("should have supported formats endpoint", () => {
-      expect(true).toBe(true);
-    });
-
-    it("should support txt conversions", () => {
-      expect(true).toBe(true);
-    });
-
-    it("should support md conversions", () => {
-      expect(true).toBe(true);
-    });
-
-    it("should support docx conversions", () => {
-      expect(true).toBe(true);
-    });
-
-    it("should support pdf conversions", () => {
-      expect(true).toBe(true);
-    });
-
-    it("should support image conversions", () => {
-      expect(true).toBe(true);
-    });
-  });
-
-  describe("UI Components", () => {
-    it("should render home screen with quick conversions", () => {
-      expect(true).toBe(true);
-    });
-
-    it("should render format selection screen", () => {
-      expect(true).toBe(true);
-    });
-
-    it("should render conversion progress screen", () => {
-      expect(true).toBe(true);
-    });
-
-    it("should render conversion result screen", () => {
-      expect(true).toBe(true);
-    });
-
-    it("should render batch conversion screen", () => {
-      expect(true).toBe(true);
-    });
-
-    it("should render history screen", () => {
-      expect(true).toBe(true);
-    });
-
-    it("should render settings screen", () => {
-      expect(true).toBe(true);
-    });
-  });
-
-  describe("Theme and Branding", () => {
-    it("should use ConvertTree app name", () => {
-      expect(true).toBe(true);
-    });
-
-    it("should use Amazigh-inspired color palette", () => {
-      expect(true).toBe(true);
-    });
-
-    it("should support dark mode", () => {
-      expect(true).toBe(true);
-    });
-
-    it("should have organic design elements", () => {
-      expect(true).toBe(true);
-    });
+  it("exposes the supported conversion routing", async () => {
+    const result = await appRouter.createCaller({
+      user: null,
+      req: {} as never,
+      res: {} as never,
+    }).conversion.supportedFormats();
+    expect(result.formats).toEqual(expect.arrayContaining(["txt", "md", "docx", "pdf", "zip"]));
+    expect(result.conversions.pdf).toEqual(["txt", "md", "docx", "zip"]);
   });
 });
