@@ -1,6 +1,6 @@
 import { beforeAll, describe, expect, it } from "vitest";
 import type { TrpcContext } from "../server/_core/context";
-import { ENTITLEMENT_MATRIX, requiresPro } from "../shared/entitlements";
+import { ENTITLEMENT_MATRIX, MAX_ENCODED_REQUEST_BYTES, requiresPro } from "../shared/entitlements";
 
 describe("conversion authentication contract", () => {
   let appRouter: typeof import("../server/routers").appRouter;
@@ -59,6 +59,8 @@ describe("conversion authentication contract", () => {
     expect(ENTITLEMENT_MATRIX.pro.maxFileBytes).toBe(50 * 1024 * 1024);
     expect(requiresPro({ outputFormat: "zip" })).toBe(true);
     expect(requiresPro({ outputFormat: "pdf" })).toBe(false);
+    expect(Buffer.alloc(ENTITLEMENT_MATRIX.pro.maxFileBytes).toString("base64").length)
+      .toBeLessThan(MAX_ENCODED_REQUEST_BYTES);
   });
 
   it("rejects free files above 10 MB", async () => {

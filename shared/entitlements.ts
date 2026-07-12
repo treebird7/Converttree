@@ -1,5 +1,9 @@
 export type SubscriptionTier = "free" | "pro";
 
+// Base64 expands binary payloads by up to 4/3. Keep a small JSON/protocol
+// margin while still bounding parser memory before decoded-size validation.
+export const MAX_ENCODED_REQUEST_BYTES = 72 * 1024 * 1024;
+
 export type ConversionEntitlementRequest = {
   isBatch?: boolean;
   outputFormat?: string;
