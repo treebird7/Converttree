@@ -6,6 +6,7 @@ import { useColors } from "@/hooks/use-colors";
 import { useBatch, BatchItem } from "@/lib/batch-context";
 import { ConversionFile } from "@/lib/conversion-context";
 import { IconSymbol } from "@/components/ui/icon-symbol";
+import { FilePreviewThumbnail } from "@/components/file-preview-thumbnail";
 import { trpc } from "@/lib/trpc";
 import * as Haptics from "expo-haptics";
 import { useState } from "react";
@@ -236,9 +237,11 @@ export default function BatchConversionScreen() {
                     className="rounded-2xl p-4 mb-3 border-2 flex-row items-center"
                     style={{ borderColor: colors.border, backgroundColor: colors.surface }}
                   >
+                    <FilePreviewThumbnail file={item.inputFile} size={52} />
+
                     {/* Status dot */}
                     <View
-                      className="w-2 h-2 rounded-full mr-3"
+                      className="w-2 h-2 rounded-full mx-3"
                       style={{ backgroundColor: getStatusColor(item.status) }}
                     />
 
@@ -248,6 +251,9 @@ export default function BatchConversionScreen() {
                       </Text>
                       <Text className="text-xs text-muted mt-1">
                         .{item.inputFile.format.toUpperCase()} → .{item.outputFormat.toUpperCase()}
+                      </Text>
+                      <Text className="text-xs text-muted mt-1">
+                        {formatFileSize(item.inputFile.size)}
                       </Text>
                       <Text
                         className="text-xs mt-1 font-semibold"
@@ -342,4 +348,10 @@ export default function BatchConversionScreen() {
       </ScrollView>
     </ScreenContainer>
   );
+}
+
+function formatFileSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
