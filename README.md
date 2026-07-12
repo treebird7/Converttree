@@ -13,7 +13,7 @@ ConvertTree is a React Native (Expo) mobile app that converts between document a
 | `.txt` | `.md`, `.docx`, `.pdf` |
 | `.md` | `.txt`, `.docx`, `.pdf` |
 | `.docx` | `.txt`, `.md`, `.pdf` |
-| `.pdf` | `.txt`, `.md`, `.docx`, images |
+| `.pdf` | `.txt`, `.md`, `.docx`, `.zip` (one PNG per page) |
 | `.png` / `.jpg` | `.pdf` |
 
 Powered by [Pandoc](https://pandoc.org/), [PyMuPDF](https://pymupdf.readthedocs.io/), and [Pillow](https://pillow.readthedocs.io/).
@@ -37,13 +37,18 @@ Powered by [Pandoc](https://pandoc.org/), [PyMuPDF](https://pymupdf.readthedocs.
 ## Features
 
 - **Single-file conversion** — pick any supported file, choose output format, download or share the result
-- **Batch conversion** — convert multiple files at once
+- **PDF page images** — export every PDF page as a PNG inside a ZIP archive
+- **Batch conversion** — convert multiple files at once with a Pro subscription
 - **Quick shortcuts** — one-tap "Convert to PDF / Word / Markdown / Text" from the home screen
 - **Conversion history** — persisted locally; browse, re-download, or clear
 - **Settings** — PDF quality, image compression, preserve formatting toggle, auto-download
 - **Privacy first** — files are deleted from the server immediately after conversion; history lives only on your device
 - **Dark mode** — full support
 - **iOS + Android + Web** — single codebase
+
+### Free and Pro access
+
+Standard single-file conversions are available without an account for files up to 10 MB, with a modest hourly usage limit. Pro access is intended for batch conversion, files up to 50 MB, high-quality or multi-page image output, and any future conversion that uses an external metered service. Billing integration is not connected yet; the server currently stores each account's `free` or `pro` entitlement explicitly.
 
 ---
 
@@ -108,6 +113,28 @@ Primary color: `#0a7ea4` (Ocean Blue)
 Brand feel: friendly, direct, privacy-respecting.
 
 Full palette and layout principles in [design.md](design.md).
+
+---
+
+## Environment Variables
+
+The server requires these environment variables at startup:
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `JWT_SECRET` | **Yes** | Cookie signing key — server refuses to start if missing |
+| `DATABASE_URL` | No | Postgres connection string (if using DB features) |
+| `OAUTH_SERVER_URL` | No | OAuth provider URL |
+| `OWNER_OPEN_ID` | No | Owner OpenID for admin access |
+| `NODE_ENV` | No | Set to `production` in prod deployments |
+
+For local development, create a `.env` file in the project root:
+
+```bash
+JWT_SECRET=your-secret-here
+```
+
+For Railway or other platforms, set these in the platform's environment variable UI. `JWT_SECRET` must be set before the server will start.
 
 ---
 
