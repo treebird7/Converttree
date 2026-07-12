@@ -6,12 +6,13 @@ import { useColors } from "@/hooks/use-colors";
 import * as Haptics from "expo-haptics";
 import { trpc } from "@/lib/trpc";
 import { FilePreviewThumbnail } from "@/components/file-preview-thumbnail";
+import { requiresPro } from "@/shared/entitlements";
 
 const CONVERSION_MAP: Record<string, string[]> = {
   txt: ["md", "docx", "pdf"],
   md: ["txt", "docx", "pdf"],
   docx: ["txt", "md", "pdf"],
-  pdf: ["txt", "md", "docx", "png", "jpg"],
+  pdf: ["txt", "md", "docx", "zip"],
   png: ["pdf", "jpg"],
   jpg: ["pdf", "png"],
   jpeg: ["pdf", "png"],
@@ -21,6 +22,8 @@ export default function FormatSelectionScreen() {
   const { inputFile, setOutputFormat, outputFormat } = useConversion();
   const params = useLocalSearchParams();
   const colors = useColors();
+  const { data: currentUser, isLoading: isAuthLoading } = trpc.auth.me.useQuery();
+  const isPro = currentUser?.subscriptionTier === "pro";
 
   const { data: supportedFormats } = trpc.conversion.supportedFormats.useQuery();
 
@@ -94,12 +97,17 @@ export default function FormatSelectionScreen() {
               scrollEnabled={false}
               renderItem={({ item: format }) => (
                 <TouchableOpacity
-                  onPress={() => handleFormatSelect(format)}
+                  onPress={() => {
+                    if (!isPro && requiresPro({ outputFormat: format })) return;
+                    handleFormatSelect(format);
+                  }}
+                  disabled={isAuthLoading || (!isPro && requiresPro({ outputFormat: format }))}
                   className="rounded-2xl p-4 mb-3 border-2"
                   style={{
                     borderColor: outputFormat === format ? colors.primary : colors.border,
                     backgroundColor:
                       outputFormat === format ? `${colors.primary}15` : colors.surface,
+                    opacity: !isPro && requiresPro({ outputFormat: format }) ? 0.55 : 1,
                   }}
                 >
                   <View className="flex-row items-center justify-between">
@@ -110,7 +118,7 @@ export default function FormatSelectionScreen() {
                           color: outputFormat === format ? colors.primary : colors.foreground,
                         }}
                       >
-                        .{format.toUpperCase()}
+                        .{format.toUpperCase()}{!isPro && requiresPro({ outputFormat: format }) ? " · PRO" : ""}
                       </Text>
                       <Text className="text-xs text-muted mt-1">
                         {getFormatDescription(format)}
@@ -135,8 +143,8 @@ export default function FormatSelectionScreen() {
             className="rounded-2xl p-4 border-2"
             style={{ borderColor: colors.warning, backgroundColor: `${colors.warning}15` }}
           >
-            <Text className="text-xs text-foreground leading-relaxed">
-              <Text className="font-bold">Note:</Text>{"  "}ConvertTree preserves your file's content and structure during conversion.
+              <Text className="text-xs text-foreground leading-relaxed">
+              <Text className="font-bold">Note:</Text>{"  "}ConvertTree preserves your file&apos;s content and structure during conversion.
             </Text>
           </View>
 
@@ -169,6 +177,7 @@ function getFormatDescription(format: string): string {
     png: "PNG image",
     jpg: "JPEG image",
     jpeg: "JPEG image",
+    zip: "ZIP archive containing one PNG per PDF page",
   };
   return descriptions[format] || format;
 }

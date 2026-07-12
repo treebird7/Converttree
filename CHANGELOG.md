@@ -7,10 +7,15 @@
 - `railway.toml` — Railway build config with health check at `/api/health`
 - `requirements.txt` — Python dependencies for the conversion pipeline
 - `.dockerignore` — excludes `node_modules`, `dist`, `.env`, native build folders
+- Free/Pro entitlement boundary with a `free` default and Pro-gated batch conversion
+- Subscription-tier database migration and entitlement regression tests
+- PDF-to-image output now returns a ZIP archive containing one PNG per page
 
 ### Fixed
 - Replaced hardcoded `/usr/bin/python3.11` with `python3` in `server/routers.ts` so conversions work regardless of which Python version is installed
 - Updated shebang in `server/conversion_utils.py` from `#!/usr/bin/python3.11` to `#!/usr/bin/env python3` for the same reason
+- Standard unauthenticated conversions are available without an account, with free-tier size and hourly limits
+- Added server-side per-IP throttling and batch entitlement enforcement
 
 ## [1.0.0] - 2026-04-07
 

@@ -50,6 +50,7 @@ export default function OAuthCallback() {
                 name: userData.name,
                 email: userData.email,
                 loginMethod: userData.loginMethod,
+                subscriptionTier: userData.subscriptionTier ?? "free",
                 lastSignedIn: new Date(userData.lastSignedIn || Date.now()),
               };
               await Auth.setUserInfo(userInfo);
@@ -201,6 +202,7 @@ export default function OAuthCallback() {
               name: result.user.name,
               email: result.user.email,
               loginMethod: result.user.loginMethod,
+              subscriptionTier: result.user.subscriptionTier ?? "free",
               lastSignedIn: new Date(result.user.lastSignedIn || Date.now()),
             };
             await Auth.setUserInfo(userInfo);
