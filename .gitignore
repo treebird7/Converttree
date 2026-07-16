@@ -86,3 +86,6 @@ docs/internal/
 
 # QR code generator (dev tooling)
 scripts/generate_qr.mjs
+
+# spidersan registry is local state; cross-machine sync is Supabase spider_registries
+.spidersan/
