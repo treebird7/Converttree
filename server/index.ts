@@ -21,6 +21,11 @@ app.use((req, res, next) => {
   if (origin && ALLOWED_ORIGINS.has(origin)) {
     res.header("Access-Control-Allow-Origin", origin);
     res.header("Vary", "Origin");
+    // No cookies are set any more, so this grants nothing. Web builds made
+    // before the auth removal still fetch with credentials: "include", and a
+    // browser rejects that response without this header. Drop it once every
+    // deployed web client is rebuilt.
+    res.header("Access-Control-Allow-Credentials", "true");
   }
   res.header("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
   res.header("Access-Control-Allow-Headers", "Content-Type, Accept");

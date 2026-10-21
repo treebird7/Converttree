@@ -84,3 +84,6 @@ scripts/generate_qr.mjs
 
 # spidersan registry is local state; cross-machine sync is Supabase spider_registries
 .spidersan/
+
+# Local fleet dashboard snapshot (not part of the app)
+BIRDSEYE.md
