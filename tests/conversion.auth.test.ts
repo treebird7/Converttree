@@ -1,12 +1,13 @@
 import { beforeAll, describe, expect, it } from "vitest";
-import type { TrpcContext } from "../server/_core/context";
+import type { TrpcContext } from "../server/context";
+import { resolveSubscriptionTier } from "../server/context";
 import { ENTITLEMENT_MATRIX, MAX_ENCODED_REQUEST_BYTES, requiresPro } from "../shared/entitlements";
 
 describe("conversion authentication contract", () => {
   let appRouter: typeof import("../server/routers").appRouter;
 
-  const createContext = (user: TrpcContext["user"] = null): TrpcContext => ({
-    user,
+  const createContext = (subscriptionTier: TrpcContext["subscriptionTier"] = "free"): TrpcContext => ({
+    subscriptionTier,
     req: {
       ip: "conversion-auth-test",
       socket: { remoteAddress: "conversion-auth-test" },
@@ -15,7 +16,6 @@ describe("conversion authentication contract", () => {
   });
 
   beforeAll(async () => {
-    process.env.JWT_SECRET = "conversion-test-secret";
     ({ appRouter } = await import("../server/routers"));
   });
 
@@ -61,6 +61,35 @@ describe("conversion authentication contract", () => {
     expect(requiresPro({ outputFormat: "pdf" })).toBe(false);
     expect(Buffer.alloc(ENTITLEMENT_MATRIX.pro.maxFileBytes).toString("base64").length)
       .toBeLessThan(MAX_ENCODED_REQUEST_BYTES);
+  });
+
+  it("lets a Pro context through the batch gate (the tier seam is honoured)", async () => {
+    const result = await appRouter.createCaller(createContext("pro")).conversion.convert({
+      inputFormat: "txt",
+      outputFormat: "md",
+      fileBase64: Buffer.from("batch").toString("base64"),
+      fileName: "batch.txt",
+      isBatch: true,
+    });
+
+    expect(result.success).toBe(true);
+  });
+
+  it("reports the request's tier through entitlements.current", async () => {
+    await expect(appRouter.createCaller(createContext()).entitlements.current()).resolves.toEqual({
+      subscriptionTier: "free",
+    });
+    await expect(appRouter.createCaller(createContext("pro")).entitlements.current()).resolves.toEqual({
+      subscriptionTier: "pro",
+    });
+  });
+
+  it("puts every real request on the free tier, whatever it sends", () => {
+    const req = {
+      headers: { authorization: "Bearer anything", cookie: "app_session_id=forged" },
+    } as unknown as TrpcContext["req"];
+
+    expect(resolveSubscriptionTier(req)).toBe("free");
   });
 
   it("rejects free files above 10 MB", async () => {

@@ -22,8 +22,9 @@ export default function FormatSelectionScreen() {
   const { inputFile, setOutputFormat, outputFormat } = useConversion();
   const params = useLocalSearchParams();
   const colors = useColors();
-  const { data: currentUser, isLoading: isAuthLoading } = trpc.auth.me.useQuery();
-  const isPro = currentUser?.subscriptionTier === "pro";
+  // Tier comes from the server, which enforces it; there are no accounts (see server/context.ts).
+  const { data: entitlements, isLoading: isAuthLoading } = trpc.entitlements.current.useQuery();
+  const isPro = entitlements?.subscriptionTier === "pro";
 
   const { data: supportedFormats } = trpc.conversion.supportedFormats.useQuery();
 

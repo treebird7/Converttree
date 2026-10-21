@@ -49,7 +49,7 @@ describe("ConvertTree state behavior", () => {
 
   it("exposes the supported conversion routing", async () => {
     const result = await appRouter.createCaller({
-      user: null,
+      subscriptionTier: "free",
       req: {} as never,
       res: {} as never,
     }).conversion.supportedFormats();

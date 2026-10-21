@@ -66,11 +66,6 @@ Thumbs.db
 # Webdev artifacts (checkpoint zips, migrations, etc.)
 .webdev/
 
-# Manus platform scaffolding (runtime, SDK, oauth internals)
-lib/_core/
-server/_core/
-shared/_core/
-
 # Expo device list (personal machine info)
 .expo/devices.json
 

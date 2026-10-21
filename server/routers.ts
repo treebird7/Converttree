@@ -1,10 +1,7 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
-import { getSessionCookieOptions } from "./_core/cookies";
-import { systemRouter } from "./_core/systemRouter";
-import { publicProcedure, router } from "./_core/trpc";
-import type { TrpcContext } from "./_core/context";
-import { COOKIE_NAME } from "../shared/const.js";
+import { publicProcedure, router } from "./trpc";
+import type { TrpcContext } from "./context";
 import { spawn } from "child_process";
 import * as fs from "fs";
 import * as path from "path";
@@ -45,17 +42,9 @@ function enforceConversionRateLimit(req: TrpcContext["req"]): void {
 }
 
 export const appRouter = router({
-  // if you need to use socket.io, read and register route in server/_core/index.ts, all api should start with '/api/' so that the gateway can route correctly
-  system: systemRouter,
-  auth: router({
-    me: publicProcedure.query((opts) => opts.ctx.user),
-    logout: publicProcedure.mutation(({ ctx }) => {
-      const cookieOptions = getSessionCookieOptions(ctx.req);
-      ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
-      return {
-        success: true,
-      } as const;
-    }),
+  entitlements: router({
+    // The tier the server will enforce for this request (see server/context.ts).
+    current: publicProcedure.query(({ ctx }) => ({ subscriptionTier: ctx.subscriptionTier })),
   }),
 
   conversion: router({
@@ -71,7 +60,7 @@ export const appRouter = router({
         })
       )
       .mutation(async ({ ctx, input }) => {
-        const tier: SubscriptionTier = ctx.user?.subscriptionTier ?? "free";
+        const tier: SubscriptionTier = ctx.subscriptionTier;
         const isPro = tier === "pro";
         if (requiresPro(input) && !isPro) {
           throw new TRPCError({

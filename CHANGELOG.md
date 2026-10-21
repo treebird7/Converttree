@@ -11,6 +11,10 @@
 - Subscription-tier database migration and entitlement regression tests
 - PDF-to-image output now returns a ZIP archive containing one PNG per page
 
+### Removed
+- The Manus platform layer the app was scaffolded from: its OAuth sign-in, session cookies, iframe runtime, storage proxy and LLM/voice/image/notification helpers, the template server guide, and the `VITE_*`/`OAUTH_*`/`OWNER_*`/`BUILT_IN_FORGE_*` environment variables. The server, tRPC setup, request context and environment validation are now the app's own tracked modules, so a fresh clone typechecks, tests and builds.
+- Sign-in: the app has no accounts. Every request is on the free tier until a way to prove Pro is chosen (`server/context.ts`).
+
 ### Fixed
 - Replaced hardcoded `/usr/bin/python3.11` with `python3` in `server/routers.ts` so conversions work regardless of which Python version is installed
 - Updated shebang in `server/conversion_utils.py` from `#!/usr/bin/python3.11` to `#!/usr/bin/env python3` for the same reason

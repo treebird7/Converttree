@@ -60,8 +60,9 @@ export default function BatchConversionScreen() {
   const { batchItems, addBatchItem, removeBatchItem, clearBatch, updateBatchItemStatus } = useBatch();
   const colors = useColors();
   const convertMutation = trpc.conversion.convert.useMutation();
-  const { data: currentUser, isLoading: isAuthLoading } = trpc.auth.me.useQuery();
-  const isPro = currentUser?.subscriptionTier === "pro";
+  // Tier comes from the server, which enforces it; there are no accounts (see server/context.ts).
+  const { data: entitlements, isLoading: isAuthLoading } = trpc.entitlements.current.useQuery();
+  const isPro = entitlements?.subscriptionTier === "pro";
   const [isConverting, setIsConverting] = useState(false);
 
   const handleAddFile = async () => {

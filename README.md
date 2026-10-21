@@ -48,7 +48,7 @@ Powered by [Pandoc](https://pandoc.org/), [PyMuPDF](https://pymupdf.readthedocs.
 
 ### Free and Pro access
 
-Standard single-file conversions are available without an account for files up to 10 MB, with a modest hourly usage limit. Pro access is intended for batch conversion, files up to 50 MB, high-quality or multi-page image output, and any future conversion that uses an external metered service. Billing integration is not connected yet; the server currently stores each account's `free` or `pro` entitlement explicitly.
+Standard single-file conversions are available without an account for files up to 10 MB, with a modest hourly usage limit. Pro access is intended for batch conversion, files up to 50 MB, high-quality or multi-page image output, and any future conversion that uses an external metered service. There are no accounts and no billing integration yet, so every request is on the free tier and Pro features are currently unavailable. The tier is decided in one place, `server/context.ts`.
 
 ---
 
@@ -67,7 +67,11 @@ app/
 components/               ← Shared UI components
 lib/                      ← Contexts (conversion, batch, history, settings)
 server/                   ← Express + tRPC backend
+  index.ts                ← HTTP server entry (health check, CORS, tRPC mount)
   routers.ts              ← API routes (conversion endpoints)
+  context.ts              ← Per-request context, incl. the entitlement tier
+  env.ts                  ← Validated server environment
+shared/entitlements.ts    ← Free/Pro limits shared by client and server
   conversion_utils.py     ← Python conversion scripts
 assets/images/            ← App icon, splash
 design.md                 ← Design decisions + color palette
@@ -100,7 +104,7 @@ pnpm android      # Android emulator
 ### Test
 
 ```bash
-pnpm test         # 48 unit tests via Vitest
+pnpm test         # unit + conversion tests via Vitest (conversion tests need python3, pandoc and requirements.txt)
 ```
 
 ---
@@ -122,11 +126,12 @@ The server requires these environment variables at startup:
 
 | Variable | Required | Description |
 |----------|----------|-------------|
-| `JWT_SECRET` | **Yes** | Cookie signing key — server refuses to start if missing |
-| `DATABASE_URL` | No | Postgres connection string (if using DB features) |
-| `OAUTH_SERVER_URL` | No | OAuth provider URL |
-| `OWNER_OPEN_ID` | No | Owner OpenID for admin access |
+| `JWT_SECRET` | **Yes** | Reserved signing key — server refuses to start if missing (nothing signs with it yet) |
+| `PORT` | No | Listen port (default `3000`) |
+| `FRONTEND_URL` | No | Extra browser origin allowed by CORS |
 | `NODE_ENV` | No | Set to `production` in prod deployments |
+
+The Expo client reads `EXPO_PUBLIC_API_BASE_URL` (the API server's base URL); empty means same-origin.
 
 For local development, create a `.env` file in the project root:
 
