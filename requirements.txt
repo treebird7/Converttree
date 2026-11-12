@@ -1,5 +1,5 @@
-pymupdf
-python-docx
-Pillow
-reportlab
-weasyprint
+pymupdf==2.0
+python-docx==1.2.0
+Pillow==13.0.0
+reportlab==5.0.1
+weasyprint==70.0
