@@ -19,6 +19,20 @@ from reportlab.pdfgen import canvas
 from reportlab.lib.utils import ImageReader
 import io
 
+SAFE_FILTER = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'safe-media.lua')
+
+
+def _pandoc(input_path: str, output_path: str, from_fmt: str, *args: str) -> None:
+    """Run pandoc in two passes so an upload can't make the server fetch URLs
+    or read local files: reader + safe-media.lua -> JSON, then JSON -> output.
+    Raises CalledProcessError like a single subprocess.run(check=True)."""
+    with tempfile.TemporaryDirectory() as media_dir:
+        ast = subprocess.run(
+            ['pandoc', input_path, '-f', from_fmt, '-t', 'json', '--lua-filter', SAFE_FILTER],
+            check=True, capture_output=True, env={**os.environ, 'CT_MEDIA_DIR': media_dir},
+        ).stdout
+        subprocess.run(['pandoc', '-f', 'json', '-o', output_path, *args], input=ast, check=True, capture_output=True)
+
 
 class FileConverter:
     """Main converter class handling all format conversions."""
@@ -83,11 +97,7 @@ class FileConverter:
     def md_to_docx(input_path: str, output_path: str) -> None:
         """Convert Markdown to DOCX using Pandoc."""
         try:
-            subprocess.run(
-                ['pandoc', input_path, '-o', output_path, '-f', 'markdown', '-t', 'docx'],
-                check=True,
-                capture_output=True,
-            )
+            _pandoc(input_path, output_path, 'markdown', '-t', 'docx')
         except subprocess.CalledProcessError as e:
             raise RuntimeError(f"Pandoc conversion failed: {e.stderr.decode()}")
     
@@ -104,11 +114,7 @@ class FileConverter:
     def docx_to_md(input_path: str, output_path: str) -> None:
         """Convert DOCX to Markdown using Pandoc."""
         try:
-            subprocess.run(
-                ['pandoc', input_path, '-o', output_path, '-f', 'docx', '-t', 'markdown'],
-                check=True,
-                capture_output=True,
-            )
+            _pandoc(input_path, output_path, 'docx', '-t', 'markdown')
         except subprocess.CalledProcessError as e:
             raise RuntimeError(f"Pandoc conversion failed: {e.stderr.decode()}")
     
@@ -140,11 +146,7 @@ class FileConverter:
     def md_to_pdf(input_path: str, output_path: str) -> None:
         """Convert Markdown to PDF using Pandoc with weasyprint."""
         try:
-            subprocess.run(
-                ['pandoc', input_path, '-o', output_path, '-f', 'markdown', '--pdf-engine=weasyprint'],
-                check=True,
-                capture_output=True,
-            )
+            _pandoc(input_path, output_path, 'markdown', '--pdf-engine=weasyprint')
         except subprocess.CalledProcessError as e:
             raise RuntimeError(f"Pandoc conversion failed: {e.stderr.decode()}")
     
@@ -152,11 +154,7 @@ class FileConverter:
     def docx_to_pdf(input_path: str, output_path: str) -> None:
         """Convert DOCX to PDF using Pandoc with weasyprint."""
         try:
-            subprocess.run(
-                ['pandoc', input_path, '-o', output_path, '-f', 'docx', '--pdf-engine=weasyprint'],
-                check=True,
-                capture_output=True,
-            )
+            _pandoc(input_path, output_path, 'docx', '--pdf-engine=weasyprint')
         except subprocess.CalledProcessError as e:
             raise RuntimeError(f"Pandoc conversion failed: {e.stderr.decode()}")
     
