@@ -4,6 +4,8 @@ import { promisify } from "node:util";
 import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
+import * as http from "node:http";
+import type { AddressInfo } from "node:net";
 
 const runFile = promisify(execFile);
 const script = path.resolve(__dirname, "../server/conversion_utils.py");
@@ -20,6 +22,13 @@ describe("conversion pipeline behavior", () => {
   });
 
   afterAll(() => fs.rmSync(tempDir, { recursive: true, force: true }));
+
+  async function pdfImageCount(pdf: string) {
+    const { stdout } = await runFile("python3", [
+      "-W", "ignore", "-c", "import sys, fitz; print(sum(len(p.get_images()) for p in fitz.open(sys.argv[1])))", pdf,
+    ]);
+    return Number(stdout.trim());
+  }
 
   async function convert(input: string, output: string, inputFormat: string, outputFormat: string) {
     await runFile("python3", [script, input, output, inputFormat, outputFormat]);
@@ -65,6 +74,51 @@ describe("conversion pipeline behavior", () => {
     expect(fs.readFileSync(txt, "utf8")).toContain("PDF page content");
     expect(fs.readFileSync(md, "utf8")).toContain("Page 1");
     expect(fs.readFileSync(zip).subarray(0, 2).toString()).toBe("PK");
+  });
+
+  it("does not fetch remote URLs or read server files referenced in an upload", async () => {
+    const hits: string[] = [];
+    const listener = http.createServer((req, res) => {
+      hits.push(req.url ?? "");
+      res.end();
+    });
+    await new Promise<void>((resolve) => listener.listen(0, "127.0.0.1", resolve));
+    const { port } = listener.address() as AddressInfo;
+
+    const secret = path.join(tempDir, "server-secret.png");
+    fs.writeFileSync(secret, onePixelPng);
+    const md = path.join(tempDir, "hostile.md");
+    fs.writeFileSync(
+      md,
+      `# Hostile\n\n![a](${secret})\n\n<img src="${secret}">\n\n![b](http://127.0.0.1:${port}/md.png)\n\n<img src="http://127.0.0.1:${port}/raw.png">\n`,
+    );
+    const docx = path.join(tempDir, "hostile.docx");
+    const pdf = path.join(tempDir, "hostile.pdf");
+    try {
+      await convert(md, docx, "md", "docx");
+      await convert(md, pdf, "md", "pdf");
+    } finally {
+      listener.close();
+    }
+    expect(hits).toEqual([]);
+    // Zip entry names are stored uncompressed; no media means nothing was embedded.
+    expect(fs.readFileSync(docx).includes("word/media/")).toBe(false);
+    expect(await pdfImageCount(pdf)).toBe(0);
+  });
+
+  it("keeps images embedded in an uploaded DOCX", async () => {
+    const png = path.join(tempDir, "embedded.png");
+    fs.writeFileSync(png, onePixelPng);
+    const docx = path.join(tempDir, "with-image.docx");
+    await runFile("python3", [
+      "-c",
+      "import sys, docx; d = docx.Document(); d.add_picture(sys.argv[1]); d.save(sys.argv[2])",
+      png,
+      docx,
+    ]);
+    const pdf = path.join(tempDir, "with-image.pdf");
+    await convert(docx, pdf, "docx", "pdf");
+    expect(await pdfImageCount(pdf)).toBe(1);
   });
 
   it("converts an image to PDF", async () => {

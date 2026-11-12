@@ -29,7 +29,7 @@ RUN pnpm build
 
 # Copy Python conversion script next to the built bundle
 # (esbuild sets __dirname to dist/, so the script must live there)
-RUN cp server/conversion_utils.py dist/
+RUN cp server/conversion_utils.py server/safe-media.lua dist/
 
 ENV NODE_ENV=production
 
