@@ -69,9 +69,9 @@ export function FilePreviewThumbnail({ file, size = 80 }: FilePreviewThumbnailPr
         gap: 4,
       }}
     >
-      {/* Folded-corner document icon via nested views */}
+      {/* Compact document badge with format metadata */}
       <View style={{ alignItems: "center", justifyContent: "center" }}>
-        <Text style={{ fontSize: size * 0.36, lineHeight: size * 0.4 }}>📄</Text>
+        <Text style={{ color: badgeColor, fontSize: size * 0.2, fontWeight: "800" }}>FILE</Text>
       </View>
       <View
         style={{

@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useCallback, useEffect } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { DEFAULT_CONVERSION_SETTINGS, updateSettings as mergeSettings } from "./context-logic";
 
 export interface ConversionSettings {
   pdfQuality: "low" | "medium" | "high";
@@ -18,12 +19,7 @@ interface SettingsContextType {
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
 const SETTINGS_KEY = "@converttree_settings";
 
-const DEFAULT_SETTINGS: ConversionSettings = {
-  pdfQuality: "high",
-  imageCompression: "medium",
-  preserveFormatting: true,
-  autoDownload: false,
-};
+export const DEFAULT_SETTINGS = DEFAULT_CONVERSION_SETTINGS;
 
 export function SettingsProvider({ children }: { children: React.ReactNode }) {
   const [settings, setSettings] = useState<ConversionSettings>(DEFAULT_SETTINGS);
@@ -47,7 +43,7 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
   const updateSettings = useCallback(
     async (newSettings: Partial<ConversionSettings>) => {
       try {
-        const updated = { ...settings, ...newSettings };
+        const updated = mergeSettings(settings, newSettings);
         setSettings(updated);
         await AsyncStorage.setItem(SETTINGS_KEY, JSON.stringify(updated));
       } catch (error) {

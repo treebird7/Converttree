@@ -66,11 +66,6 @@ Thumbs.db
 # Webdev artifacts (checkpoint zips, migrations, etc.)
 .webdev/
 
-# Manus platform scaffolding (runtime, SDK, oauth internals)
-lib/_core/
-server/_core/
-shared/_core/
-
 # Expo device list (personal machine info)
 .expo/devices.json
 
@@ -89,3 +84,6 @@ scripts/generate_qr.mjs
 
 # spidersan registry is local state; cross-machine sync is Supabase spider_registries
 .spidersan/
+
+# Local fleet dashboard snapshot (not part of the app)
+BIRDSEYE.md

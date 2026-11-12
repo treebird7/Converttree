@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useCallback, useEffect } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { appendHistory } from "./context-logic";
 
 export interface HistoryItem {
   id: string;
@@ -43,13 +44,8 @@ export function HistoryProvider({ children }: { children: React.ReactNode }) {
   const addToHistory = useCallback(
     async (item: Omit<HistoryItem, "id" | "timestamp">) => {
       try {
-        const newItem: HistoryItem = {
-          ...item,
-          id: `${Date.now()}_${Math.random()}`,
-          timestamp: Date.now(),
-        };
-
-        const updated = [newItem, ...history].slice(0, 50); // Keep last 50
+        const timestamp = Date.now();
+        const updated = appendHistory(history, item, `${timestamp}_${Math.random()}`, timestamp);
         setHistory(updated);
         await AsyncStorage.setItem(HISTORY_KEY, JSON.stringify(updated));
       } catch (error) {

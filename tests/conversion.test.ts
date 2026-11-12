@@ -47,20 +47,20 @@ describe("File Conversion API", () => {
   describe("Document Format Conversions", () => {
     it("should validate docx format support", () => {
       // Verify docx is in supported formats
-      const supportedFormats = ["txt", "md", "docx", "pdf", "png", "jpg", "jpeg"];
+      const supportedFormats = ["txt", "md", "docx", "pdf", "png", "jpg", "jpeg", "zip"];
       expect(supportedFormats).toContain("docx");
     });
 
     it("should validate pdf format support", () => {
       // Verify pdf is in supported formats
-      const supportedFormats = ["txt", "md", "docx", "pdf", "png", "jpg", "jpeg"];
+      const supportedFormats = ["txt", "md", "docx", "pdf", "png", "jpg", "jpeg", "zip"];
       expect(supportedFormats).toContain("pdf");
     });
   });
 
   describe("Image Format Conversions", () => {
     it("should validate image format support", () => {
-      const supportedFormats = ["txt", "md", "docx", "pdf", "png", "jpg", "jpeg"];
+      const supportedFormats = ["txt", "md", "docx", "pdf", "png", "jpg", "jpeg", "zip"];
       expect(supportedFormats).toContain("png");
       expect(supportedFormats).toContain("jpg");
       expect(supportedFormats).toContain("jpeg");
@@ -73,7 +73,7 @@ describe("File Conversion API", () => {
         txt: ["md", "docx", "pdf"],
         md: ["txt", "docx", "pdf"],
         docx: ["txt", "md", "pdf"],
-        pdf: ["txt", "md", "docx", "png", "jpg"],
+        pdf: ["txt", "md", "docx", "zip"],
         png: ["pdf", "jpg"],
         jpg: ["pdf", "png"],
         jpeg: ["pdf", "png"],
@@ -87,7 +87,7 @@ describe("File Conversion API", () => {
         txt: ["md", "docx", "pdf"],
         md: ["txt", "docx", "pdf"],
         docx: ["txt", "md", "pdf"],
-        pdf: ["txt", "md", "docx", "png", "jpg"],
+        pdf: ["txt", "md", "docx", "zip"],
         png: ["pdf", "jpg"],
         jpg: ["pdf", "png"],
         jpeg: ["pdf", "png"],
@@ -101,7 +101,7 @@ describe("File Conversion API", () => {
         txt: ["md", "docx", "pdf"],
         md: ["txt", "docx", "pdf"],
         docx: ["txt", "md", "pdf"],
-        pdf: ["txt", "md", "docx", "png", "jpg"],
+        pdf: ["txt", "md", "docx", "zip"],
         png: ["pdf", "jpg"],
         jpg: ["pdf", "png"],
         jpeg: ["pdf", "png"],
@@ -116,20 +116,19 @@ describe("File Conversion API", () => {
         txt: ["md", "docx", "pdf"],
         md: ["txt", "docx", "pdf"],
         docx: ["txt", "md", "pdf"],
-        pdf: ["txt", "md", "docx", "png", "jpg"],
+        pdf: ["txt", "md", "docx", "zip"],
         png: ["pdf", "jpg"],
         jpg: ["pdf", "png"],
         jpeg: ["pdf", "png"],
       };
 
-      expect(conversions.pdf).toContain("png");
-      expect(conversions.pdf).toContain("jpg");
+      expect(conversions.pdf).toContain("zip");
     });
   });
 
   describe("Error Handling", () => {
     it("should reject unsupported formats", () => {
-      const supportedFormats = ["txt", "md", "docx", "pdf", "png", "jpg", "jpeg"];
+      const supportedFormats = ["txt", "md", "docx", "pdf", "png", "jpg", "jpeg", "zip"];
       const unsupportedFormat = "xyz";
 
       expect(supportedFormats).not.toContain(unsupportedFormat);

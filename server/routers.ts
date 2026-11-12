@@ -1,44 +1,87 @@
 import { z } from "zod";
-import { getSessionCookieOptions } from "./_core/cookies";
-import { systemRouter } from "./_core/systemRouter";
-import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
-import { COOKIE_NAME } from "../shared/const.js";
+import { TRPCError } from "@trpc/server";
+import { publicProcedure, router } from "./trpc";
+import type { TrpcContext } from "./context";
 import { spawn } from "child_process";
 import * as fs from "fs";
 import * as path from "path";
 import * as os from "os";
+import { fileURLToPath, URL } from "url";
+import {
+  ENTITLEMENT_MATRIX,
+  entitlementFor,
+  requiresPro,
+  type SubscriptionTier,
+} from "../shared/entitlements.js";
 
-const VALID_FORMATS = new Set(["txt", "md", "docx", "pdf", "png", "jpg", "jpeg"]);
-const MAX_FILE_BYTES = 50 * 1024 * 1024; // 50 MB
+const VALID_FORMATS = new Set(["txt", "md", "docx", "pdf", "png", "jpg", "jpeg", "zip"]);
+const FREE_RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000;
+
+type RateLimitEntry = { count: number; windowStartedAt: number };
+const conversionRateLimits = new Map<string, RateLimitEntry>();
+const conversionScriptPath = fileURLToPath(new URL("./conversion_utils.py", import.meta.url));
+
+function enforceConversionRateLimit(req: TrpcContext["req"]): void {
+  const key = req.ip || req.socket.remoteAddress || "unknown";
+  const now = Date.now();
+  const current = conversionRateLimits.get(key);
+
+  if (!current || now - current.windowStartedAt >= FREE_RATE_LIMIT_WINDOW_MS) {
+    conversionRateLimits.set(key, { count: 1, windowStartedAt: now });
+    return;
+  }
+
+  if (current.count >= ENTITLEMENT_MATRIX.free.conversionsPerHour) {
+    throw new TRPCError({
+      code: "TOO_MANY_REQUESTS",
+      message: "Free conversions are limited to 10 requests per hour. Please try again later or upgrade to Pro.",
+    });
+  }
+
+  current.count += 1;
+}
 
 export const appRouter = router({
-  // if you need to use socket.io, read and register route in server/_core/index.ts, all api should start with '/api/' so that the gateway can route correctly
-  system: systemRouter,
-  auth: router({
-    me: publicProcedure.query((opts) => opts.ctx.user),
-    logout: publicProcedure.mutation(({ ctx }) => {
-      const cookieOptions = getSessionCookieOptions(ctx.req);
-      ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
-      return {
-        success: true,
-      } as const;
-    }),
+  entitlements: router({
+    // The tier the server will enforce for this request (see server/context.ts).
+    current: publicProcedure.query(({ ctx }) => ({ subscriptionTier: ctx.subscriptionTier })),
   }),
 
   conversion: router({
-    convert: protectedProcedure
+    convert: publicProcedure
       .input(
         z.object({
           inputFormat: z.string().refine((f) => VALID_FORMATS.has(f), { message: "Invalid input format" }),
           outputFormat: z.string().refine((f) => VALID_FORMATS.has(f), { message: "Invalid output format" }),
-          fileBase64: z.string().max(MAX_FILE_BYTES * 2), // base64 is ~1.37x raw size
+          fileBase64: z.string().max(ENTITLEMENT_MATRIX.pro.maxFileBytes * 2), // base64 is ~1.37x raw size
           fileName: z.string().min(1).max(255),
+          isBatch: z.boolean().default(false),
+          highQuality: z.boolean().default(false),
         })
       )
-      .mutation(async ({ input }) => {
+      .mutation(async ({ ctx, input }) => {
+        const tier: SubscriptionTier = ctx.subscriptionTier;
+        const isPro = tier === "pro";
+        if (requiresPro(input) && !isPro) {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: input.outputFormat === "zip"
+              ? "Multi-page image output requires a Pro subscription."
+              : "Batch or high-quality conversion requires a Pro subscription.",
+          });
+        }
+
+        if (!isPro) enforceConversionRateLimit(ctx.req);
+
         const buffer = Buffer.from(input.fileBase64, "base64");
-        if (buffer.length > MAX_FILE_BYTES) {
-          throw new Error("File exceeds 50 MB limit");
+        const maxFileBytes = entitlementFor(tier).maxFileBytes;
+        if (buffer.length > maxFileBytes) {
+          throw new TRPCError({
+            code: "PAYLOAD_TOO_LARGE",
+            message: isPro
+              ? "File exceeds the 50 MB limit."
+              : "Free conversions support files up to 10 MB. Upgrade to Pro for files up to 50 MB.",
+          });
         }
 
         const safeName = input.fileName.replace(/[^a-zA-Z0-9._-]/g, "_").slice(0, 100);
@@ -67,7 +110,7 @@ export const appRouter = router({
           } as unknown as NodeJS.ProcessEnv;
           await new Promise<void>((resolve, reject) => {
             const python = spawn("python3", [
-              path.join(__dirname, "conversion_utils.py"),
+              conversionScriptPath,
               inputPath,
               outputPath,
               input.inputFormat,
@@ -161,12 +204,12 @@ export const appRouter = router({
       }),
 
     supportedFormats: publicProcedure.query(() => ({
-      formats: ["txt", "md", "docx", "pdf", "png", "jpg", "jpeg"],
+      formats: ["txt", "md", "docx", "pdf", "png", "jpg", "jpeg", "zip"],
       conversions: {
         txt: ["md", "docx", "pdf"],
         md: ["txt", "docx", "pdf"],
         docx: ["txt", "md", "pdf"],
-        pdf: ["txt", "md", "docx", "png", "jpg"],
+        pdf: ["txt", "md", "docx", "zip"],
         png: ["pdf", "jpg"],
         jpg: ["pdf", "png"],
         jpeg: ["pdf", "png"],

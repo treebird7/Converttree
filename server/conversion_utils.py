@@ -7,6 +7,8 @@ Supports conversions between: txt, md, docx, pdf, and images (png, jpg).
 import os
 import subprocess
 import sys
+import tempfile
+import zipfile
 from pathlib import Path
 from typing import Optional, List
 import fitz  # PyMuPDF
@@ -29,6 +31,7 @@ class FileConverter:
         'png': 'image',
         'jpg': 'image',
         'jpeg': 'image',
+        'zip': 'archive',
     }
     
     PANDOC_FORMAT_MAP = {
@@ -175,21 +178,25 @@ class FileConverter:
             images[0].save(output_path, save_all=True, append_images=images[1:])
     
     @staticmethod
-    def pdf_to_images(input_path: str, output_dir: str) -> List[str]:
-        """Convert PDF pages to images using PyMuPDF."""
+    def pdf_to_images(input_path: str, output_path: str) -> None:
+        """Package PDF pages as PNG files in a ZIP archive."""
         pdf_document = fitz.open(input_path)
-        output_paths = []
-        
-        for page_num in range(len(pdf_document)):
-            page = pdf_document[page_num]
-            pix = page.get_pixmap(matrix=fitz.Matrix(2, 2))  # 2x zoom for better quality
-            
-            output_path = os.path.join(output_dir, f'page_{page_num + 1}.png')
-            pix.save(output_path)
-            output_paths.append(output_path)
-        
-        pdf_document.close()
-        return output_paths
+
+        try:
+            with tempfile.TemporaryDirectory(prefix='converttree-pages-') as image_dir:
+                page_paths = []
+                for page_num in range(len(pdf_document)):
+                    page = pdf_document[page_num]
+                    pix = page.get_pixmap(matrix=fitz.Matrix(2, 2))
+                    page_path = os.path.join(image_dir, f'page_{page_num + 1}.png')
+                    pix.save(page_path)
+                    page_paths.append(page_path)
+
+                with zipfile.ZipFile(output_path, 'w', compression=zipfile.ZIP_DEFLATED) as archive:
+                    for page_path in page_paths:
+                        archive.write(page_path, arcname=os.path.basename(page_path))
+        finally:
+            pdf_document.close()
     
     @staticmethod
     def pdf_to_txt(input_path: str, output_path: str) -> None:
@@ -305,10 +312,9 @@ class FileConverter:
             FileConverter.pdf_to_md(input_path, output_path)
         elif conversion_key == "pdf_to_docx":
             FileConverter.pdf_to_docx(input_path, output_path)
-        elif output_format in ['png', 'jpg', 'jpeg'] and input_format == 'pdf':
-            # PDF to images - returns list of paths
-            os.makedirs(os.path.dirname(output_path) or '.', exist_ok=True)
-            FileConverter.pdf_to_images(input_path, os.path.dirname(output_path) or '.')
+        elif output_format == 'zip' and input_format == 'pdf':
+            # PDF to ZIP containing one PNG image per page
+            FileConverter.pdf_to_images(input_path, output_path)
         elif input_format in ['png', 'jpg', 'jpeg'] and output_format == 'pdf':
             # Single image to PDF
             FileConverter.images_to_pdf([input_path], output_path)

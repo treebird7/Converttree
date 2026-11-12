@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useCallback } from "react";
 import { ConversionFile } from "./conversion-context";
+import { createBatchItem, updateBatchItem } from "./context-logic";
 
 export interface BatchItem {
   id: string;
@@ -26,12 +27,7 @@ export function BatchProvider({ children }: { children: React.ReactNode }) {
 
   const addBatchItem = useCallback((inputFile: ConversionFile, outputFormat: string) => {
     const id = `batch_${Date.now()}_${Math.random()}`;
-    const newItem: BatchItem = {
-      id,
-      inputFile,
-      outputFormat,
-      status: "pending",
-    };
+    const newItem = createBatchItem(inputFile, outputFormat, id);
     setBatchItems((prev) => [...prev, newItem]);
     return id;
   }, []);
@@ -42,13 +38,7 @@ export function BatchProvider({ children }: { children: React.ReactNode }) {
 
   const updateBatchItemStatus = useCallback(
     (id: string, status: BatchItem["status"], convertedFile?: ConversionFile, error?: string) => {
-      setBatchItems((prev) =>
-        prev.map((item) =>
-          item.id === id
-            ? { ...item, status, convertedFile, error }
-            : item
-        )
-      );
+      setBatchItems((prev) => updateBatchItem(prev, id, status, convertedFile, error));
     },
     []
   );

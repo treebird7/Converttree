@@ -246,6 +246,7 @@ function getMimeType(format: string): string {
     png: "image/png",
     jpg: "image/jpeg",
     jpeg: "image/jpeg",
+    zip: "application/zip",
   };
   return mimeTypes[format] || "application/octet-stream";
 }
